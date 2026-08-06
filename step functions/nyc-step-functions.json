@@ -1,0 +1,126 @@
+{
+  "Comment": "NYC Yellow Taxi Step Function Orchestrator",
+  "StartAt": "nyl-job-1",
+  "States": {
+    "nyl-job-1": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "nyl-job-1",
+        "Arguments": {
+          "--JOB_NAME": "nyl-job-1",
+          "--bucket.$": "$.bucket",
+          "--year.$": "$.year",
+          "--month.$": "$.month",
+          "--raw_path.$": "$.raw_path",
+          "--landing_path.$": "$.landing_path"
+        }
+      },
+      "ResultPath": "$.job1_result",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "Pipeline_Failed"
+        }
+      ],
+      "Next": "nyc-job-2"
+    },
+
+    "nyc-job-2": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "nyc-job-2",
+        "Arguments": {
+          "--JOB_NAME": "nyc-job-2",
+          "--bucket.$": "$.bucket",
+          "--year.$": "$.year",
+          "--month.$": "$.month",
+          "--landing_path.$": "$.landing_path",
+          "--silver_path.$": "$.silver_path"
+        }
+      },
+      "ResultPath": "$.job2_result",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "Pipeline_Failed"
+        }
+      ],
+      "Next": "nyc-job-3"
+    },
+
+    "nyc-job-3": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "nyc-job-3",
+        "Arguments": {
+          "--JOB_NAME": "nyc-job-3",
+          "--bucket.$": "$.bucket",
+          "--year.$": "$.year",
+          "--month.$": "$.month",
+          "--silver_path.$": "$.silver_path",
+          "--gold_path.$": "$.gold_path"
+        }
+      },
+      "ResultPath": "$.job3_result",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "Pipeline_Failed"
+        }
+      ],
+      "Next": "Pipeline_Succeeded"
+    },
+
+    "Pipeline_Succeeded": {
+      "Type": "Succeed"
+    },
+
+    "Pipeline_Failed": {
+      "Type": "Fail",
+      "Error": "GlueJobFailed",
+      "Cause": "One or more Glue jobs failed during execution."
+    }
+  }
+}
