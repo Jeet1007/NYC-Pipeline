@@ -49,7 +49,7 @@
           "--bucket.$": "$.bucket",
           "--year.$": "$.year",
           "--month.$": "$.month",
-          "--landing_path.$": "$.landing_path",
+          "--raw_path.$": "$.raw_path",
           "--silver_path.$": "$.silver_path"
         }
       },
@@ -112,6 +112,8 @@
       ],
       "Next": "Pipeline_Succeeded"
     },
+
+
 
     "Pipeline_Succeeded": {
       "Type": "Succeed"
