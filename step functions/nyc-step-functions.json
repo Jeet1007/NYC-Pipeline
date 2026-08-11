@@ -18,105 +18,194 @@
       },
       "ResultPath": "$.job1_result",
       "Retry": [
-        {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "IntervalSeconds": 30,
-          "MaxAttempts": 2,
-          "BackoffRate": 2.0
-        }
+        { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 30, "MaxAttempts": 2, "BackoffRate": 2 }
       ],
       "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "Pipeline_Failed" }
+      ],
+      "Next": "nyc-job-2-parallel-crawler-raw"
+    },
+    "nyc-job-2-parallel-crawler-raw": {
+      "Type": "Parallel",
+      "Branches": [
         {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "ResultPath": "$.error",
-          "Next": "Pipeline_Failed"
+          "StartAt": "nyc-job-2",
+          "States": {
+            "nyc-job-2": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "nyc-job-2",
+                "Arguments": {
+                  "--JOB_NAME": "nyc-job-2",
+                  "--bucket.$": "$.bucket",
+                  "--year.$": "$.year",
+                  "--month.$": "$.month",
+                  "--raw_path.$": "$.raw_path",
+                  "--silver_path.$": "$.silver_path"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "nyc-raw-crawler",
+          "States": {
+            "nyc-raw-crawler": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+              "Parameters": { "Name": "nyc-yellow-taxi-raw-crawler-temp" },
+              "ResultPath": "$.crawler_start_result",
+              "Retry": [
+                { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 15, "MaxAttempts": 3, "BackoffRate": 2 }
+              ],
+              "End": true
+            }
+          }
         }
       ],
-      "Next": "nyc-job-2"
-    },
-
-    "nyc-job-2": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::glue:startJobRun.sync",
-      "Parameters": {
-        "JobName": "nyc-job-2",
-        "Arguments": {
-          "--JOB_NAME": "nyc-job-2",
-          "--bucket.$": "$.bucket",
-          "--year.$": "$.year",
-          "--month.$": "$.month",
-          "--landing_path.$": "$.landing_path",
-          "--silver_path.$": "$.silver_path"
-        }
-      },
       "ResultPath": "$.job2_result",
       "Retry": [
-        {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "IntervalSeconds": 30,
-          "MaxAttempts": 2,
-          "BackoffRate": 2.0
-        }
+        { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 30, "MaxAttempts": 2, "BackoffRate": 2.0 }
       ],
       "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "Pipeline_Failed" }
+      ],
+      "Next": "nyc-job-3-parallel-crawler-silver"
+    },
+    "nyc-job-3-parallel-crawler-silver": {
+      "Type": "Parallel",
+      "Branches": [
         {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "ResultPath": "$.error",
-          "Next": "Pipeline_Failed"
+          "StartAt": "nyc-job-3",
+          "States": {
+            "nyc-job-3": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::glue:startJobRun.sync",
+              "Parameters": {
+                "JobName": "nyc-job-3",
+                "Arguments": {
+                  "--JOB_NAME": "nyc-job-3",
+                  "--bucket.$": "$.bucket",
+                  "--year.$": "$.year",
+                  "--month.$": "$.month",
+                  "--silver_path.$": "$.silver_path",
+                  "--gold_path.$": "$.gold_path"
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "nyc-silver-crawler",
+          "States": {
+            "nyc-silver-crawler": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+              "Parameters": { "Name": "nyc-yellow-taxi-silver-crawler" },
+              "ResultPath": "$.crawler_start_result",
+              "Retry": [
+                { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 15, "MaxAttempts": 3, "BackoffRate": 2 }
+              ],
+              "End": true
+            }
+          }
         }
       ],
-      "Next": "nyc-job-3"
-    },
-
-    "nyc-job-3": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::glue:startJobRun.sync",
-      "Parameters": {
-        "JobName": "nyc-job-3",
-        "Arguments": {
-          "--JOB_NAME": "nyc-job-3",
-          "--bucket.$": "$.bucket",
-          "--year.$": "$.year",
-          "--month.$": "$.month",
-          "--silver_path.$": "$.silver_path",
-          "--gold_path.$": "$.gold_path"
-        }
-      },
       "ResultPath": "$.job3_result",
       "Retry": [
-        {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "IntervalSeconds": 30,
-          "MaxAttempts": 2,
-          "BackoffRate": 2.0
-        }
+        { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 30, "MaxAttempts": 2, "BackoffRate": 2 }
       ],
       "Catch": [
+        { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "Pipeline_Failed" }
+      ],
+      "Next": "nyc-gold-crawler"
+    },
+    "nyc-gold-crawler": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
+      "Parameters": { "Name": "nyc-yellow-taxi-gold-aggs-crawler" },
+      "ResultPath": "$.gold_crawler_start_result",
+      "Retry": [
+        { "ErrorEquals": ["States.ALL"], "IntervalSeconds": 15, "MaxAttempts": 3, "BackoffRate": 2 }
+      ],
+      "Catch": [
+        { "ErrorEquals": ["States.ALL"], "Next": "Pipeline_Failed", "ResultPath": "$.error" }
+      ],
+      "Next": "Check_All_Crawlers"
+    },
+    "Check_All_Crawlers": {
+      "Type": "Parallel",
+      "Branches": [
         {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "ResultPath": "$.error",
-          "Next": "Pipeline_Failed"
+          "StartAt": "Check_raw_Status",
+          "States": {
+            "Check_raw_Status": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+              "Parameters": { "Name": "nyc-yellow-taxi-raw-crawler-temp" },
+              "ResultPath": "$.crawler_status",
+              "Next": "Is_Raw_Done"
+            },
+            "Is_Raw_Done": {
+              "Type": "Choice",
+              "Choices": [
+                { "Variable": "$.crawler_status.Crawler.State", "StringEquals": "READY", "Next": "Raw_Done" }
+              ],
+              "Default": "Wait_Raw"
+            },
+            "Wait_Raw": { "Type": "Wait", "Seconds": 30, "Next": "Check_raw_Status" },
+            "Raw_Done": { "Type": "Succeed" }
+          }
+        },
+        {
+          "StartAt": "Check_silver_Status",
+          "States": {
+            "Check_silver_Status": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+              "Parameters": { "Name": "nyc-yellow-taxi-silver-crawler" },
+              "ResultPath": "$.crawler_status",
+              "Next": "Is_Silver_Done"
+            },
+            "Is_Silver_Done": {
+              "Type": "Choice",
+              "Choices": [
+                { "Variable": "$.crawler_status.Crawler.State", "StringEquals": "READY", "Next": "Silver_Done" }
+              ],
+              "Default": "Wait_Silver"
+            },
+            "Wait_Silver": { "Type": "Wait", "Seconds": 30, "Next": "Check_silver_Status" },
+            "Silver_Done": { "Type": "Succeed" }
+          }
+        },
+        {
+          "StartAt": "Check_gold_Status",
+          "States": {
+            "Check_gold_Status": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::aws-sdk:glue:getCrawler",
+              "Parameters": { "Name": "nyc-yellow-taxi-gold-aggs-crawler" },
+              "ResultPath": "$.crawler_status",
+              "Next": "Is_Gold_Done"
+            },
+            "Is_Gold_Done": {
+              "Type": "Choice",
+              "Choices": [
+                { "Variable": "$.crawler_status.Crawler.State", "StringEquals": "READY", "Next": "Gold_Done" }
+              ],
+              "Default": "Wait_Gold"
+            },
+            "Wait_Gold": { "Type": "Wait", "Seconds": 30, "Next": "Check_gold_Status" },
+            "Gold_Done": { "Type": "Succeed" }
+          }
         }
       ],
       "Next": "Pipeline_Succeeded"
     },
-
-    "Pipeline_Succeeded": {
-      "Type": "Succeed"
-    },
-
+    "Pipeline_Succeeded": { "Type": "Succeed" },
     "Pipeline_Failed": {
       "Type": "Fail",
       "Error": "GlueJobFailed",
