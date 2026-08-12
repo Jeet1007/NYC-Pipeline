@@ -144,7 +144,7 @@ df_faulty_dropoff_locations.coalesce(1).write.mode("overwrite").parquet(f"{rejec
 
 #=======================Writing Silver DataFrame in Parquet format in append mode======================
 
-df_silver.coalesce(1).write.mode("append").parquet(f"{write_path}/facts")
+df_silver.coalesce(1).write.mode("overwrite").parquet(f"{write_path}/facts_silver/year={year}/month={month}")
 # df_silver.show(20)
 # print(df_silver.count())
 
