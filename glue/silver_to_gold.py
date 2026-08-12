@@ -85,7 +85,7 @@ def write_pq(df, bucket, key):
 """
 Here we join the Silver Facts with the lookup(static for now) to get a holistic, single source of truth for our data.
 """
-df_silver = read_silver_pq(bucket, "facts")
+df_silver = read_silver_pq(bucket, "facts_silver")
 df_lookup = read_silver_csv(bucket, "zone_lookup")
 
 df_gold = df_silver.join(df_lookup, df_silver.PULocationID == df_lookup.LocationID, how="left")
